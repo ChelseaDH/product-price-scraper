@@ -1,10 +1,13 @@
 module product-price-scraper
 
-go 1.23.0
+go 1.24
+
+toolchain go1.24.0
 
 require (
 	github.com/chromedp/chromedp v0.13.0
 	github.com/gocolly/colly v1.2.0
+	github.com/pelletier/go-toml v1.9.5
 )
 
 require (
@@ -13,9 +16,9 @@ require (
 	github.com/antchfx/htmlquery v1.3.4 // indirect
 	github.com/antchfx/xmlquery v1.4.4 // indirect
 	github.com/antchfx/xpath v1.3.3 // indirect
-	github.com/chromedp/cdproto v0.0.0-20250222051814-50c6cb17f10a // indirect
+	github.com/chromedp/cdproto v0.0.0-20250224005500-01948a15fe7c // indirect
 	github.com/chromedp/sysutil v1.1.0 // indirect
-	github.com/go-json-experiment/json v0.0.0-20250211171154-1ae217ad3535 // indirect
+	github.com/go-json-experiment/json v0.0.0-20250223041408-d3c622f1b874 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
