@@ -1,3 +1,10 @@
+[matrix]
+    home_server = "matrix.org"
+    username = "@test:matrix.org"
+    access_token = "ckAtHJpY2Vz_lnEqWRKRBgsoqFDKJmAm_10Wwxd"
+    database = "matrix.db"
+    room_id = "!Hy13Jfkfirhu:matrix.org"
+
 [[products]]
     name = "Byoma Moisturizing Gel Cream"
     base_price = 11.99
