@@ -4,28 +4,28 @@ import (
 	"context"
 	"fmt"
 	"github.com/chromedp/chromedp"
-	"github.com/gocolly/colly"
+	"github.com/gocolly/colly/v2"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
 type Scraper interface {
-	ExtractPrice(url string) (float64, error)
+	ExtractPrice(ctx context.Context, url string) (float64, error)
 }
 
 type BootsScraper struct{}
 
-func (b *BootsScraper) ExtractPrice(url string) (float64, error) {
-	return scrapePriceViaColly(url, "div#PDP_productPrice", func(e *colly.HTMLElement) string {
+func (b *BootsScraper) ExtractPrice(ctx context.Context, url string) (float64, error) {
+	return scrapePriceViaColly(ctx, url, "div#PDP_productPrice", func(e *colly.HTMLElement) string {
 		return e.Text
 	})
 }
 
 type AmazonScraper struct{}
 
-func (a *AmazonScraper) ExtractPrice(url string) (float64, error) {
-	ctx, cancel := chromedp.NewContext(context.Background())
+func (a *AmazonScraper) ExtractPrice(ctx context.Context, url string) (float64, error) {
+	ctx, cancel := chromedp.NewContext(ctx)
 	defer cancel()
 
 	var text string
@@ -44,14 +44,15 @@ func (a *AmazonScraper) ExtractPrice(url string) (float64, error) {
 
 type LookFantasticScraper struct{}
 
-func (l LookFantasticScraper) ExtractPrice(url string) (float64, error) {
-	return scrapePriceViaColly(url, "div#product-price", func(e *colly.HTMLElement) string {
+func (l LookFantasticScraper) ExtractPrice(ctx context.Context, url string) (float64, error) {
+	return scrapePriceViaColly(ctx, url, "div#product-price", func(e *colly.HTMLElement) string {
 		return e.ChildText("span.text-gray-900")
 	})
 }
 
-func scrapePriceViaColly(url string, selector string, getText func(e *colly.HTMLElement) string) (float64, error) {
+func scrapePriceViaColly(ctx context.Context, url string, selector string, getText func(e *colly.HTMLElement) string) (float64, error) {
 	c := colly.NewCollector()
+	c.Context = ctx
 
 	var price float64
 

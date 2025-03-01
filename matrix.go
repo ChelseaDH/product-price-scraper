@@ -69,7 +69,7 @@ func connectToMatrix(config Matrix, ctx context.Context) (*MatrixClient, error) 
 		return nil, fmt.Errorf("Error creating cryptohelper: %v\n", err)
 	}
 
-	err = crypto.Init(context.Background())
+	err = crypto.Init(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("Error initializing cryptohelper: %v\n", err)
 	}
@@ -78,7 +78,7 @@ func connectToMatrix(config Matrix, ctx context.Context) (*MatrixClient, error) 
 
 	fmt.Printf("Connected to %s\n", config.HomeServer)
 
-	syncCtx, cancelSync := context.WithCancel(context.Background())
+	syncCtx, cancelSync := context.WithCancel(ctx)
 	var syncStopWait sync.WaitGroup
 	syncStopWait.Add(1)
 

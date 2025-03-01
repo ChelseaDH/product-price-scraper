@@ -6,7 +6,7 @@ toolchain go1.24.0
 
 require (
 	github.com/chromedp/chromedp v0.13.0
-	github.com/gocolly/colly v1.2.0
+	github.com/gocolly/colly/v2 v2.1.1-0.20240605174350-99b7fb1b87d1
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/pelletier/go-toml v1.9.5
 	maunium.net/go/mautrix v0.23.1
@@ -19,6 +19,7 @@ require (
 	github.com/antchfx/htmlquery v1.3.4 // indirect
 	github.com/antchfx/xmlquery v1.4.4 // indirect
 	github.com/antchfx/xpath v1.3.3 // indirect
+	github.com/bits-and-blooms/bitset v1.21.0 // indirect
 	github.com/chromedp/cdproto v0.0.0-20250224005500-01948a15fe7c // indirect
 	github.com/chromedp/sysutil v1.1.0 // indirect
 	github.com/go-json-experiment/json v0.0.0-20250223041408-d3c622f1b874 // indirect
@@ -31,6 +32,7 @@ require (
 	github.com/kennygrant/sanitize v1.2.4 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/nlnwa/whatwg-url v0.5.1 // indirect
 	github.com/petermattis/goid v0.0.0-20250211185408-f2b9d978cd7a // indirect
 	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
@@ -41,8 +43,8 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/yuin/goldmark v1.7.8 // indirect
 	go.mau.fi/util v0.8.5 // indirect
-	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/exp v0.0.0-20250215185904-eff6e970281f // indirect
+	golang.org/x/crypto v0.35.0 // indirect
+	golang.org/x/exp v0.0.0-20250228200357-dead58393ab7 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect

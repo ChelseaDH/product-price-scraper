@@ -4,7 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
 	"sort"
+	"syscall"
+	"time"
 )
 
 type Retailer struct {
@@ -25,6 +29,15 @@ type SuccessScrape struct {
 }
 
 func main() {
+	ctx, cancelCtx := context.WithCancel(context.Background())
+	sigs := make(chan os.Signal)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		cancelCtx()
+	}()
+
 	retailers := map[string]*Retailer{
 		"boots":         {Name: "Boots", Scraper: &BootsScraper{}},
 		"amazon":        {Name: "Amazon", Scraper: &AmazonScraper{}},
@@ -37,10 +50,10 @@ func main() {
 		return
 	}
 
-	client, err := getClient(config, context.Background())
+	client, err := getClient(config, ctx)
 	products := getProducts(config, retailers)
 
-	err = findPricesAndNotify(products, client)
+	err = findPricesAndNotify(ctx, products, client)
 	if err != nil {
 		fmt.Println("Error finding prices and notifying:", err)
 	}
@@ -51,7 +64,7 @@ func main() {
 	}
 }
 
-func findPricesAndNotify(products []Product, client Client) error {
+func findPricesAndNotify(ctx context.Context, products []Product, client Client) error {
 	cheaperPrices := make(map[*Product][]SuccessScrape)
 	var failures []FailedScrape
 
@@ -59,7 +72,7 @@ func findPricesAndNotify(products []Product, client Client) error {
 		var successScrapes []SuccessScrape
 
 		for retailer, link := range product.RetailerLinks {
-			price, err := retailer.Scraper.ExtractPrice(link)
+			price, err := retailer.Scraper.ExtractPrice(ctx, link)
 			if err != nil {
 				failures = append(failures, FailedScrape{Product: &products[i], Retailer: retailer, Error: err})
 				continue
