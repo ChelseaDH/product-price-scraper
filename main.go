@@ -33,6 +33,7 @@ func main() {
 	config, err := loadConfig()
 	if err != nil {
 		fmt.Println("Error loading config:", err)
+		return
 	}
 
 	cache, err := NewCache(config.General.Database)
