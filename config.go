@@ -3,18 +3,24 @@ package main
 import (
 	"github.com/pelletier/go-toml"
 	"os"
+	"time"
 )
 
 type Config struct {
+	General  General       `toml:"general"`
 	Matrix   *Matrix       `toml:"matrix"`
 	Products []ProductTOML `toml:"products"`
+}
+
+type General struct {
+	Database string        `toml:"database"`
+	Interval time.Duration `toml:"interval"`
 }
 
 type Matrix struct {
 	HomeServer  string `toml:"home_server"`
 	UserName    string `toml:"username"`
 	AccessToken string `toml:"access_token"`
-	Database    string `toml:"database"`
 	RoomID      string `toml:"room_id"`
 }
 

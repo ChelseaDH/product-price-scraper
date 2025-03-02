@@ -1,8 +1,11 @@
+[general]
+    database = "app.db"
+    interval = "1h"
+
 [matrix]
     home_server = "matrix.org"
     username = "@test:matrix.org"
     access_token = "ckAtHJpY2Vz_lnEqWRKRBgsoqFDKJmAm_10Wwxd"
-    database = "matrix.db"
     room_id = "!Hy13Jfkfirhu:matrix.org"
 
 [[products]]

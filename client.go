@@ -21,10 +21,10 @@ func (d *DefaultClient) Stop() error {
 	return nil
 }
 
-func getClient(config Config, ctx context.Context) (Client, error) {
+func getClient(ctx context.Context, config Config) (Client, error) {
 	if config.Matrix == nil {
 		return &DefaultClient{}, nil
 	} else {
-		return connectToMatrix(*config.Matrix, ctx)
+		return connectToMatrix(ctx, *config.Matrix, config.General.Database)
 	}
 }

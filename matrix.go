@@ -19,7 +19,7 @@ type MatrixClient struct {
 	cancelSync context.CancelFunc
 }
 
-func connectToMatrix(config Matrix, ctx context.Context) (*MatrixClient, error) {
+func connectToMatrix(ctx context.Context, config Matrix, dbPath string) (*MatrixClient, error) {
 	client, err := mautrix.NewClient(config.HomeServer, id.UserID(config.UserName), config.AccessToken)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating client: %v\n", err)
@@ -64,7 +64,7 @@ func connectToMatrix(config Matrix, ctx context.Context) (*MatrixClient, error) 
 		}
 	})
 
-	crypto, err := cryptohelper.NewCryptoHelper(client, []byte("prices"), config.Database)
+	crypto, err := cryptohelper.NewCryptoHelper(client, []byte("prices"), dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating cryptohelper: %v\n", err)
 	}
