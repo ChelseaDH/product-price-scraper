@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 )
 
@@ -24,7 +23,7 @@ type SuccessScrape struct {
 	Url      string
 }
 
-func getProducts(config Config, retailers map[string]*Retailer) Products {
+func GetProducts(config Config, retailers map[string]*Retailer) Products {
 	var products []Product
 
 	for _, p := range config.Products {
@@ -45,7 +44,7 @@ func getProducts(config Config, retailers map[string]*Retailer) Products {
 	return products
 }
 
-func (p Products) getPrices(ctx context.Context) (map[*Product][]SuccessScrape, []FailedScrape) {
+func (p Products) GetPrices() (map[*Product][]SuccessScrape, []FailedScrape) {
 	prices := make(map[*Product][]SuccessScrape)
 	var failures []FailedScrape
 
@@ -53,7 +52,7 @@ func (p Products) getPrices(ctx context.Context) (map[*Product][]SuccessScrape, 
 		var successScrapes []SuccessScrape
 
 		for retailer, link := range product.RetailerLinks {
-			price, err := retailer.Scraper.ExtractPrice(ctx, link)
+			price, err := retailer.Scraper.ExtractPrice(link)
 			if err != nil {
 				failures = append(failures, FailedScrape{Product: &p[i], Retailer: retailer, Error: err})
 				continue
@@ -68,8 +67,8 @@ func (p Products) getPrices(ctx context.Context) (map[*Product][]SuccessScrape, 
 	return prices, failures
 }
 
-func (p Products) findPricesAndNotify(ctx context.Context, client Client, cache *Cache) error {
-	prices, _ := p.getPrices(ctx)
+func (p Products) FindPricesAndNotify(client Client, cache *Cache) error {
+	prices, _ := p.GetPrices()
 	cachedPrices, err := cache.GetScrapes()
 	if err != nil {
 		return fmt.Errorf("error getting cached prices: %v", err)

@@ -9,17 +9,6 @@ import (
 	"time"
 )
 
-type Retailer struct {
-	Name    string
-	Scraper Scraper
-}
-
-var retailers = map[string]*Retailer{
-	"boots":         {Name: "Boots", Scraper: &BootsScraper{}},
-	"amazon":        {Name: "Amazon", Scraper: &AmazonScraper{}},
-	"lookFantastic": {Name: "Look Fantastic", Scraper: &LookFantasticScraper{}},
-}
-
 func main() {
 	ctx, cancelCtx := context.WithCancel(context.Background())
 	sigs := make(chan os.Signal)
@@ -48,9 +37,10 @@ func main() {
 		return
 	}
 
-	products := getProducts(config, retailers)
+	retailers := GetRetailers(ctx)
+	products := GetProducts(config, retailers)
 
-	err = products.findPricesAndNotify(ctx, client, cache)
+	err = products.FindPricesAndNotify(client, cache)
 	if err != nil {
 		fmt.Println("Error finding prices and notifying:", err)
 	}
@@ -63,7 +53,7 @@ loop:
 
 		select {
 		case <-time.After(interval):
-			err = products.findPricesAndNotify(ctx, client, cache)
+			err = products.FindPricesAndNotify(client, cache)
 			if err != nil {
 				fmt.Println("Error finding prices and notifying:", err)
 			}
