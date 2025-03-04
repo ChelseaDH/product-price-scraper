@@ -1,6 +1,7 @@
 [general]
     database = "app.db"
     interval = "1h"
+    min_discount = 0.1
 
 [matrix]
     home_server = "matrix.org"

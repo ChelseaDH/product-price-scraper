@@ -48,7 +48,7 @@ func notify(prices map[*Product][]SuccessScrape, client Client) error {
 	return client.SendMessage(message.String())
 }
 
-func shouldNotify(prices map[*Product][]SuccessScrape, cachedPrices map[CacheKey]float64) bool {
+func shouldNotify(prices map[*Product][]SuccessScrape, cachedPrices map[CacheKey]float64, minDiscount float64) bool {
 	for product, scrapes := range prices {
 		for _, scrape := range scrapes {
 			key := CacheKey{
@@ -57,7 +57,7 @@ func shouldNotify(prices map[*Product][]SuccessScrape, cachedPrices map[CacheKey
 			}
 			cachedPrice, ok := cachedPrices[key]
 
-			if (ok && scrape.Price != cachedPrice) || (!ok && scrape.Price < product.BasePrice) {
+			if (ok && scrape.Price != cachedPrice) || (!ok && scrape.Price < (product.BasePrice*(1-minDiscount))) {
 				return true
 			}
 		}

@@ -67,14 +67,14 @@ func (p Products) GetPrices() (map[*Product][]SuccessScrape, []FailedScrape) {
 	return prices, failures
 }
 
-func (p Products) FindPricesAndNotify(client Client, cache *Cache) error {
+func (p Products) FindPricesAndNotify(client Client, cache *Cache, minDiscount float64) error {
 	prices, _ := p.GetPrices()
 	cachedPrices, err := cache.GetScrapes()
 	if err != nil {
 		return fmt.Errorf("error getting cached prices: %v", err)
 	}
 
-	if shouldNotify(prices, cachedPrices) {
+	if shouldNotify(prices, cachedPrices, minDiscount) {
 		fmt.Println("New prices found, notifying")
 		err = notify(prices, client)
 		if err != nil {

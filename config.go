@@ -13,8 +13,9 @@ type Config struct {
 }
 
 type General struct {
-	Database string        `toml:"database"`
-	Interval time.Duration `toml:"interval"`
+	Database    string        `toml:"database"`
+	Interval    time.Duration `toml:"interval"`
+	MinDiscount float64       `toml:"min_discount"`
 }
 
 type Matrix struct {

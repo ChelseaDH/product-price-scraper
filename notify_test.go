@@ -62,6 +62,7 @@ func TestShouldNotify(t *testing.T) {
 	type args struct {
 		prices       map[*Product][]SuccessScrape
 		cachedPrices map[CacheKey]float64
+		minDiscount  float64
 	}
 	tests := []struct {
 		name     string
@@ -79,6 +80,7 @@ func TestShouldNotify(t *testing.T) {
 				cachedPrices: map[CacheKey]float64{
 					CacheKey{retailer.Name, product.Name}: product.BasePrice,
 				},
+				minDiscount: 0.1,
 			},
 			expected: true,
 		},
@@ -93,6 +95,7 @@ func TestShouldNotify(t *testing.T) {
 				cachedPrices: map[CacheKey]float64{
 					CacheKey{retailer.Name, product.Name}: product.BasePrice - 10,
 				},
+				minDiscount: 0.1,
 			},
 			expected: false,
 		},
@@ -105,6 +108,20 @@ func TestShouldNotify(t *testing.T) {
 					},
 				},
 				cachedPrices: nil,
+				minDiscount:  0.1,
+			},
+			expected: false,
+		},
+		{
+			name: "should not notify if cache does not exist and price not lower than min discount",
+			args: args{
+				prices: map[*Product][]SuccessScrape{
+					product: {
+						{retailer, product.BasePrice * 0.95, "https://test.com/1"},
+					},
+				},
+				cachedPrices: nil,
+				minDiscount:  0.1,
 			},
 			expected: false,
 		},
@@ -113,17 +130,18 @@ func TestShouldNotify(t *testing.T) {
 			args: args{
 				prices: map[*Product][]SuccessScrape{
 					product: {
-						{retailer, product.BasePrice - 1, "https://test.com/1"},
+						{retailer, product.BasePrice * 0.8, "https://test.com/1"},
 					},
 				},
 				cachedPrices: nil,
+				minDiscount:  0.1,
 			},
 			expected: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := shouldNotify(tt.args.prices, tt.args.cachedPrices); got != tt.expected {
+			if got := shouldNotify(tt.args.prices, tt.args.cachedPrices, tt.args.minDiscount); got != tt.expected {
 				t.Errorf("shouldNotify() = %v, expected %v", got, tt.expected)
 			}
 		})
