@@ -5,7 +5,7 @@ RUN apk add --no-cache gcc musl-dev
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
-COPY *.go .
+COPY *.go ./
 
 ENV CGO_ENABLED=1
 RUN go build -tags goolm -o product-price-scraper
