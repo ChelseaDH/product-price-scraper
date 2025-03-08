@@ -45,11 +45,7 @@ This is where you list the products you want to track:
 
 ## 🔨 Build instructions
 1. Copy `example.toml` to a file named `config.toml` and insert your desired products and settings 
-2. Build the Docker image:
+2. Run the container:
    ```bash
-   docker build -t pps .
-    ```
-3. Run the docker container:
-   ```bash
-   docker run -v ./config.toml:/config.toml:ro -v ./app.db:/app.db pps:latest
+   docker compose up -d
     ```

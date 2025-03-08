@@ -1,0 +1,7 @@
+services:
+  app:
+    image: ghcr.io/chelseadh/product-price-scraper
+    volumes:
+      - ./config.toml:/config.toml:ro
+      - ./app.db:/app.db
+    restart: on-failure
