@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 )
 
 type Product struct {
@@ -16,6 +17,24 @@ type FailedScrape struct {
 	Product  *Product
 	Retailer *Retailer
 	Error    error
+}
+
+func (f FailedScrape) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("product", f.Product.Name),
+		slog.String("retailer", f.Retailer.Name),
+		slog.String("err", f.Error.Error()),
+	)
+}
+
+type FailedScrapes []FailedScrape
+
+func (fs FailedScrapes) LogValue() slog.Value {
+	attrs := make([]slog.Value, len(fs))
+	for i, f := range fs {
+		attrs[i] = f.LogValue()
+	}
+	return slog.AnyValue(attrs)
 }
 
 type SuccessScrape struct {
@@ -45,7 +64,7 @@ func GetProducts(config Config, retailers map[string]*Retailer) Products {
 	return products
 }
 
-func (p Products) GetPrices(ctx context.Context) (map[*Product][]SuccessScrape, []FailedScrape) {
+func (p Products) GetPrices(ctx context.Context) (map[*Product][]SuccessScrape, FailedScrapes) {
 	prices := make(map[*Product][]SuccessScrape)
 	var failures []FailedScrape
 
@@ -68,21 +87,27 @@ func (p Products) GetPrices(ctx context.Context) (map[*Product][]SuccessScrape, 
 	return prices, failures
 }
 
-func (p Products) FindPricesAndNotify(ctx context.Context, client Client, cache *Cache, minDiscount float64) error {
-	prices, _ := p.GetPrices(ctx)
+func (p Products) FindPricesAndNotify(ctx context.Context, logger *slog.Logger, client Client, cache *Cache, minDiscount float64) error {
+	logger.Info("Starting scrape")
+
+	prices, failures := p.GetPrices(ctx)
+	if failures != nil {
+		logger.Warn("Failures returned from getting prices", slog.Any("failures", failures))
+	}
+
 	cachedPrices, err := cache.GetScrapes()
 	if err != nil {
 		return fmt.Errorf("error getting cached prices: %v", err)
 	}
 
 	if shouldNotify(prices, cachedPrices, minDiscount) {
-		fmt.Println("New prices found, notifying")
+		logger.Info("New prices found, notifying")
 		err = notify(prices, client)
 		if err != nil {
 			return fmt.Errorf("error notifying products: %v", err)
 		}
 	} else {
-		fmt.Println("No new prices found")
+		logger.Info("No new prices found")
 	}
 
 	return cache.SetScrapes(prices)

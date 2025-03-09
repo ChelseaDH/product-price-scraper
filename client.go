@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 )
 
 type Client interface {
@@ -21,10 +22,10 @@ func (d *DefaultClient) Stop() error {
 	return nil
 }
 
-func getClient(ctx context.Context, config Config) (Client, error) {
+func getClient(ctx context.Context, logger *slog.Logger, config Config) (Client, error) {
 	if config.Matrix == nil {
 		return &DefaultClient{}, nil
 	} else {
-		return connectToMatrix(ctx, *config.Matrix, config.General.Database)
+		return connectToMatrix(ctx, logger, *config.Matrix, config.General.Database)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"log/slog"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/cryptohelper"
 	"maunium.net/go/mautrix/event"
@@ -19,7 +20,7 @@ type MatrixClient struct {
 	cancelSync context.CancelFunc
 }
 
-func connectToMatrix(ctx context.Context, config Matrix, dbPath string) (*MatrixClient, error) {
+func connectToMatrix(ctx context.Context, logger *slog.Logger, config Matrix, dbPath string) (*MatrixClient, error) {
 	client, err := mautrix.NewClient(config.HomeServer, id.UserID(config.UserName), config.AccessToken)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating client: %v\n", err)
@@ -38,7 +39,7 @@ func connectToMatrix(ctx context.Context, config Matrix, dbPath string) (*Matrix
 	// Capture the room ID of a received message
 	syncer.OnEventType(event.EventMessage, func(ctx context.Context, evt *event.Event) {
 		if evt.Sender != client.UserID {
-			fmt.Printf("Received message in room %s: %s\n", evt.RoomID, evt.Content.AsMessage().Body)
+			logger.Info(fmt.Sprintf("Received message in room %s: %s\n", evt.RoomID, evt.Content.AsMessage().Body))
 		}
 	})
 	// Join or leave a room after receiving an invitation
@@ -49,18 +50,18 @@ func connectToMatrix(ctx context.Context, config Matrix, dbPath string) (*Matrix
 
 		if evt.Content.AsMember().Membership == event.MembershipInvite {
 			if evt.Sender.Homeserver() == client.UserID.Homeserver() {
-				fmt.Printf("Joining room %s after invite from %s\n", evt.RoomID, evt.Sender)
+				logger.Info(fmt.Sprintf("Joining room %s after invite from %s", evt.RoomID, evt.Sender))
 				_, err = client.JoinRoomByID(ctx, evt.RoomID)
 			} else {
-				fmt.Printf("Declining invite from %s to join room %s\n", evt.Sender, evt.RoomID)
+				logger.Info(fmt.Sprintf("Declining invite from %s to join room %s", evt.Sender, evt.RoomID))
 				_, err = client.LeaveRoom(ctx, evt.RoomID)
 			}
 
 			if err != nil {
-				fmt.Printf("Error joining room after invite: %v\n", err)
+				LogError(logger, "Failed to join room after invite", err)
 			}
 		} else {
-			fmt.Printf("Room membership changed to %s in room %s\n", evt.Content.AsMember().Membership, evt.RoomID)
+			logger.Info(fmt.Sprintf("Room membership changed to %s in room %s", evt.Content.AsMember().Membership, evt.RoomID))
 		}
 	})
 
@@ -76,7 +77,7 @@ func connectToMatrix(ctx context.Context, config Matrix, dbPath string) (*Matrix
 	// Set the client crypto helper to automatically encrypt outgoing messages
 	client.Crypto = crypto
 
-	fmt.Printf("Connected to %s\n", config.HomeServer)
+	logger.Info(fmt.Sprintf("Connected to %s", config.HomeServer))
 
 	syncCtx, cancelSync := context.WithCancel(ctx)
 	var syncStopWait sync.WaitGroup
@@ -91,7 +92,7 @@ func connectToMatrix(ctx context.Context, config Matrix, dbPath string) (*Matrix
 		defer syncStopWait.Done()
 		err = client.SyncWithContext(syncCtx)
 		if err != nil && !errors.Is(err, context.Canceled) {
-			fmt.Printf("Error syncing: %v\n", err)
+			LogError(logger, "Failed to sync", err)
 		}
 	}()
 
