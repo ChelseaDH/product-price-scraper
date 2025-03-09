@@ -37,10 +37,10 @@ func main() {
 		return
 	}
 
-	retailers := GetRetailers(ctx)
+	retailers := GetRetailers()
 	products := GetProducts(config, retailers)
 
-	err = products.FindPricesAndNotify(client, cache, config.General.MinDiscount)
+	err = products.FindPricesAndNotify(ctx, client, cache, config.General.MinDiscount)
 	if err != nil {
 		fmt.Println("Error finding prices and notifying:", err)
 	}
@@ -53,7 +53,7 @@ loop:
 
 		select {
 		case <-time.After(interval):
-			err = products.FindPricesAndNotify(client, cache, config.General.MinDiscount)
+			err = products.FindPricesAndNotify(ctx, client, cache, config.General.MinDiscount)
 			if err != nil {
 				fmt.Println("Error finding prices and notifying:", err)
 			}

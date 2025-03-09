@@ -11,92 +11,130 @@ import (
 )
 
 type Scraper interface {
-	ExtractPrice(url string) (float64, error)
+	ExtractPrice(ctx context.Context, url string) (float64, error)
 }
 
-type BaseScraper struct {
-	collector *colly.Collector
+type baseScraper struct {
+	selector string
+	getText  func(e *colly.HTMLElement) string
 }
 
-func NewBaseScraper(ctx context.Context) *BaseScraper {
+func newBaseScraper(selector string, getText func(e *colly.HTMLElement) string) *baseScraper {
+	return &baseScraper{
+		selector: selector,
+		getText:  getText,
+	}
+}
+
+func (b *baseScraper) extractPrice(ctx context.Context, url string) (float64, error) {
 	c := colly.NewCollector()
 	c.Context = ctx
 
 	extensions.RandomUserAgent(c)
 
-	c.OnError(func(r *colly.Response, err error) {
-		fmt.Printf("Request URL: %s failed with response: %v and error: %v\n", r.Request.URL, r, err)
+	var price *float64
+	var scrapeError error
+	var foundElement bool
+
+	// Set up handlers
+	c.OnHTML(b.selector, func(e *colly.HTMLElement) {
+		foundElement = true
+		scrapedPrice, err := parsePrice(b.getText(e))
+		if err != nil {
+			scrapeError = fmt.Errorf("failed to parse price: %w", err)
+			return
+		}
+		price = scrapedPrice
 	})
 
-	return &BaseScraper{collector: c}
+	c.OnScraped(func(r *colly.Response) {
+		if !foundElement && scrapeError == nil {
+			scrapeError = fmt.Errorf("no matching elements found for selector %s at %s", b.selector, r.Request.URL)
+		}
+	})
+
+	c.OnError(func(r *colly.Response, err error) {
+		scrapeError = fmt.Errorf("request URL: %s failed with response: %v and error: %v\n", r.Request.URL, r, err)
+	})
+
+	// Visit URL and wait for completion
+	err := c.Visit(url)
+	if err != nil {
+		return 0, fmt.Errorf("failed to visit %s: %w", url, err)
+	}
+
+	c.Wait()
+
+	// Determine result
+	if scrapeError != nil {
+		return 0, scrapeError
+	}
+
+	if price == nil {
+		return 0, fmt.Errorf("no price found at %s", url)
+	}
+
+	return *price, nil
 }
 
 type BootsScraper struct {
-	baseScraper *BaseScraper
+	baseScraper *baseScraper
 }
 
-func NewBootsScraper(base *BaseScraper) *BootsScraper {
-	return &BootsScraper{baseScraper: base}
+func (b *BootsScraper) ExtractPrice(ctx context.Context, url string) (float64, error) {
+	return b.baseScraper.extractPrice(ctx, url)
 }
 
-func (b *BootsScraper) ExtractPrice(url string) (float64, error) {
-	return b.baseScraper.ExtractPrice(url, "div#PDP_productPrice", func(e *colly.HTMLElement) string {
-		return e.Text
-	})
+func NewBootsScraper() *BootsScraper {
+	return &BootsScraper{
+		baseScraper: newBaseScraper("div#PDP_productPrice", func(e *colly.HTMLElement) string {
+			return e.Text
+		}),
+	}
 }
 
 type AmazonScraper struct {
-	baseScraper *BaseScraper
+	baseScraper *baseScraper
 }
 
-func NewAmazonScraper(base *BaseScraper) *AmazonScraper {
-	return &AmazonScraper{baseScraper: base}
+func (a *AmazonScraper) ExtractPrice(ctx context.Context, url string) (float64, error) {
+	return a.baseScraper.extractPrice(ctx, url)
 }
 
-func (a *AmazonScraper) ExtractPrice(url string) (float64, error) {
-	return a.baseScraper.ExtractPrice(url, "span#tp_price_block_total_price_ww", func(e *colly.HTMLElement) string {
-		return e.Text
-	})
+func NewAmazonScraper() *AmazonScraper {
+	return &AmazonScraper{
+		baseScraper: newBaseScraper("span#tp_price_block_total_price_ww", func(e *colly.HTMLElement) string {
+			return e.Text
+		}),
+	}
 }
 
 type LookFantasticScraper struct {
-	baseScraper *BaseScraper
+	baseScraper *baseScraper
 }
 
-func NewLookFantasticScraper(base *BaseScraper) *LookFantasticScraper {
-	return &LookFantasticScraper{baseScraper: base}
+func (l *LookFantasticScraper) ExtractPrice(ctx context.Context, url string) (float64, error) {
+	return l.baseScraper.extractPrice(ctx, url)
 }
 
-func (l LookFantasticScraper) ExtractPrice(url string) (float64, error) {
-	return l.baseScraper.ExtractPrice(url, "div#product-price", func(e *colly.HTMLElement) string {
-		return e.ChildText("span.text-gray-900")
-	})
-}
-
-func (b *BaseScraper) ExtractPrice(url string, selector string, getText func(e *colly.HTMLElement) string) (float64, error) {
-	var price float64
-
-	b.collector.OnHTML(selector, func(e *colly.HTMLElement) {
-		price = parsePrice(getText(e))
-	})
-
-	err := b.collector.Visit(url)
-	if err != nil {
-		return 0, err
+func NewLookFantasticScraper() *LookFantasticScraper {
+	return &LookFantasticScraper{
+		baseScraper: newBaseScraper("div#product-price", func(e *colly.HTMLElement) string {
+			return e.ChildText("span")
+		}),
 	}
-
-	return price, nil
 }
 
-func parsePrice(price string) float64 {
+func parsePrice(price string) (*float64, error) {
 	re := regexp.MustCompile(`£(\d+\.\d{1,2})`)
 	matches := re.FindStringSubmatch(strings.TrimSpace(price))
 	if len(matches) > 1 {
 		parsed, err := strconv.ParseFloat(matches[1], 64)
-		if err == nil {
-			return parsed
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse price %s", matches[1])
 		}
+		return &parsed, nil
 	}
 
-	return 0
+	return nil, fmt.Errorf("no price found")
 }
