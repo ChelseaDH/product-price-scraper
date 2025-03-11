@@ -35,10 +35,25 @@ func TestNotify(t *testing.T) {
 				Url:      "https://test.com/2",
 			},
 		},
+		&Product{
+			Name:      "Test Product 2",
+			BasePrice: 100.00,
+		}: {
+			{
+				Retailer: retailer,
+				Price:    95.00,
+				Url:      "https://test.com/2",
+			},
+			{
+				Retailer: retailer,
+				Price:    90.01,
+				Url:      "https://test.com/2",
+			},
+		},
 	}
 	client := &TestClient{}
 
-	err := notify(prices, client)
+	err := notify(prices, client, 0.1)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -124,6 +139,19 @@ func TestShouldNotify(t *testing.T) {
 				minDiscount:  0.1,
 			},
 			expected: false,
+		},
+		{
+			name: "should notify if cache does not exist and price is lower by the exact min discount",
+			args: args{
+				prices: map[*Product][]SuccessScrape{
+					product: {
+						{retailer, product.BasePrice * 0.9, "https://test.com/1"},
+					},
+				},
+				cachedPrices: nil,
+				minDiscount:  0.1,
+			},
+			expected: true,
 		},
 		{
 			name: "should notify if cache does not exist and price is lower",

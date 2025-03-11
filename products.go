@@ -102,7 +102,7 @@ func (p Products) FindPricesAndNotify(ctx context.Context, logger *slog.Logger, 
 
 	if shouldNotify(prices, cachedPrices, minDiscount) {
 		logger.Info("New prices found, notifying")
-		err = notify(prices, client)
+		err = notify(prices, client, minDiscount)
 		if err != nil {
 			return fmt.Errorf("error notifying products: %v", err)
 		}

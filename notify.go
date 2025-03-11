@@ -6,14 +6,14 @@ import (
 	"sort"
 )
 
-func notify(prices map[*Product][]SuccessScrape, client Client) error {
+func notify(prices map[*Product][]SuccessScrape, client Client, minDiscount float64) error {
 	message := bytes.Buffer{}
 	fmt.Fprintf(&message, "🛍️ **New prices found** 🤑\n\n")
 
 	for product, scrapes := range prices {
 		var cheaperPrices []SuccessScrape
 		for _, scrape := range scrapes {
-			if scrape.Price < product.BasePrice {
+			if scrape.Price <= (product.BasePrice * (1 - minDiscount)) {
 				cheaperPrices = append(cheaperPrices, scrape)
 			}
 		}
@@ -57,7 +57,7 @@ func shouldNotify(prices map[*Product][]SuccessScrape, cachedPrices map[CacheKey
 			}
 			cachedPrice, ok := cachedPrices[key]
 
-			if (ok && scrape.Price != cachedPrice) || (!ok && scrape.Price < (product.BasePrice*(1-minDiscount))) {
+			if (ok && scrape.Price != cachedPrice) || (!ok && scrape.Price <= (product.BasePrice*(1-minDiscount))) {
 				return true
 			}
 		}
