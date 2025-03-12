@@ -8,7 +8,7 @@ import (
 
 func notify(prices map[*Product][]SuccessScrape, client Client, minDiscount float64) error {
 	message := bytes.Buffer{}
-	fmt.Fprintf(&message, "🛍️ **New prices found** 🤑\n\n")
+	fmt.Fprintf(&message, "🛍️ **Cheaper prices found** 🤑\n\n")
 
 	for product, scrapes := range prices {
 		var cheaperPrices []SuccessScrape
@@ -30,15 +30,13 @@ func notify(prices map[*Product][]SuccessScrape, client Client, minDiscount floa
 		fmt.Fprintf(&message, "Base price: £%.2f\n", product.BasePrice)
 
 		cheapest := cheaperPrices[0]
-		fmt.Fprintf(&message, "Best price: **£%.2f** at [%s](%s) %s\n", cheapest.Price, cheapest.Retailer.Name,
-			cheapest.Url, product.getDiscountString(cheapest.Price))
+		fmt.Fprintln(&message, cheapest.GetCheapestPriceString(product))
 
 		remaining := cheaperPrices[1:]
 		if len(remaining) > 0 {
 			fmt.Fprintln(&message, "Other prices:")
 			for _, scrape := range remaining {
-				fmt.Fprintf(&message, "- £%.2f at [%s](%s) %s\n", scrape.Price, scrape.Retailer.Name, scrape.Url,
-					product.getDiscountString(scrape.Price))
+				fmt.Fprintln(&message, scrape.GetOtherPriceString(product))
 			}
 		}
 
@@ -48,16 +46,15 @@ func notify(prices map[*Product][]SuccessScrape, client Client, minDiscount floa
 	return client.SendMessage(message.String())
 }
 
-func shouldNotify(prices map[*Product][]SuccessScrape, cachedPrices map[CacheKey]float64, minDiscount float64) bool {
+func shouldNotify(prices map[*Product][]SuccessScrape, minDiscount float64) bool {
 	for product, scrapes := range prices {
 		for _, scrape := range scrapes {
-			key := CacheKey{
-				Retailer: scrape.Retailer.Name,
-				Product:  product.Name,
-			}
-			cachedPrice, ok := cachedPrices[key]
-
-			if (ok && scrape.Price != cachedPrice) || (!ok && scrape.Price <= (product.BasePrice*(1-minDiscount))) {
+			cachedPrice := scrape.CachedPrice
+			if cachedPrice != nil {
+				if scrape.Price != *cachedPrice {
+					return true
+				}
+			} else if scrape.Price <= (product.BasePrice * (1 - minDiscount)) {
 				return true
 			}
 		}
