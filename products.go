@@ -108,14 +108,15 @@ func (p Products) FindPricesAndNotify(ctx context.Context, logger *slog.Logger, 
 		logger.Warn("Failures returned from getting prices", slog.Any("failures", failures))
 	}
 
-	if shouldNotify(prices, minDiscount) {
-		logger.Info("New prices found, notifying")
-		err = notify(prices, client, minDiscount)
+	notifiablePrices := GetNotifiablePrices(prices, minDiscount)
+	if len(notifiablePrices) == 0 {
+		logger.Info("No prices found to notify")
+	} else {
+		logger.Info("Prices found to notify", slog.Any("prices", notifiablePrices))
+		err = notify(notifiablePrices, client)
 		if err != nil {
 			return fmt.Errorf("error notifying products: %v", err)
 		}
-	} else {
-		logger.Info("No new prices found")
 	}
 
 	return cache.SetScrapes(prices)

@@ -6,33 +6,22 @@ import (
 	"sort"
 )
 
-func notify(prices map[*Product][]SuccessScrape, client Client, minDiscount float64) error {
+func notify(prices map[*Product][]SuccessScrape, client Client) error {
 	message := bytes.Buffer{}
 	fmt.Fprintf(&message, "🛍️ **Cheaper prices found** 🤑\n\n")
 
 	for product, scrapes := range prices {
-		var cheaperPrices []SuccessScrape
-		for _, scrape := range scrapes {
-			if scrape.Price <= (product.BasePrice * (1 - minDiscount)) {
-				cheaperPrices = append(cheaperPrices, scrape)
-			}
-		}
-
-		if len(cheaperPrices) == 0 {
-			continue
-		}
-
-		sort.Slice(cheaperPrices, func(i, j int) bool {
-			return cheaperPrices[i].Price < cheaperPrices[j].Price
+		sort.Slice(scrapes, func(i, j int) bool {
+			return scrapes[i].Price < scrapes[j].Price
 		})
 
 		fmt.Fprintf(&message, "**%s**\n", product.Name)
 		fmt.Fprintf(&message, "Base price: £%.2f\n", product.BasePrice)
 
-		cheapest := cheaperPrices[0]
+		cheapest := scrapes[0]
 		fmt.Fprintln(&message, cheapest.GetCheapestPriceString(product))
 
-		remaining := cheaperPrices[1:]
+		remaining := scrapes[1:]
 		if len(remaining) > 0 {
 			fmt.Fprintln(&message, "Other prices:")
 			for _, scrape := range remaining {
@@ -46,18 +35,40 @@ func notify(prices map[*Product][]SuccessScrape, client Client, minDiscount floa
 	return client.SendMessage(message.String())
 }
 
-func shouldNotify(prices map[*Product][]SuccessScrape, minDiscount float64) bool {
+func GetNotifiablePrices(prices map[*Product][]SuccessScrape, minDiscount float64) map[*Product][]SuccessScrape {
+	filteredPrices := make(map[*Product][]SuccessScrape)
+
 	for product, scrapes := range prices {
+		var notifiableScrapes []SuccessScrape
+		baseThreshold := product.BasePrice * (1 - minDiscount)
+
 		for _, scrape := range scrapes {
-			cachedPrice := scrape.CachedPrice
-			if cachedPrice != nil {
-				if scrape.Price != *cachedPrice {
-					return true
-				}
-			} else if scrape.Price <= (product.BasePrice * (1 - minDiscount)) {
-				return true
+			shouldNotify := false
+
+			if scrape.CachedPrice != nil {
+				cachedPrice := *scrape.CachedPrice
+				lowerThreshold := cachedPrice * (1 - minDiscount)
+				upperThreshold := cachedPrice * (1 + minDiscount)
+
+				droppedBelowBaseThreshold := scrape.Price <= baseThreshold && cachedPrice > baseThreshold
+				outsideCachedThreshold := scrape.Price <= lowerThreshold || scrape.Price >= upperThreshold
+
+				// Notify if the price dropped below the base threshold or if the price is a good discount and has changed significantly from the cache
+				shouldNotify = droppedBelowBaseThreshold || (outsideCachedThreshold && scrape.Price <= baseThreshold)
+			} else {
+				// No cache => notify if the price is a good discount
+				shouldNotify = scrape.Price <= baseThreshold
+			}
+
+			if shouldNotify {
+				notifiableScrapes = append(notifiableScrapes, scrape)
 			}
 		}
+
+		if len(notifiableScrapes) > 0 {
+			filteredPrices[product] = notifiableScrapes
+		}
 	}
-	return false
+
+	return filteredPrices
 }

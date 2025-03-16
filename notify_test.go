@@ -1,6 +1,8 @@
 package main
 
-import "testing"
+import (
+	"testing"
+)
 
 type TestClient struct {
 	message string
@@ -35,7 +37,7 @@ func TestNotify(t *testing.T) {
 				Retailer:    retailer,
 				Price:       80.00,
 				Url:         "https://test.com/1",
-				CachedPrice: floatPtr(85.00),
+				CachedPrice: floatPtr(80.00),
 			},
 			{
 				Retailer:    retailer2,
@@ -56,24 +58,25 @@ func TestNotify(t *testing.T) {
 			},
 		},
 		&Product{
-			Name:      "Test Product 2",
+			Name:      "Test Product 3",
 			BasePrice: 100.00,
 		}: {
 			{
-				Retailer: retailer,
-				Price:    95.00,
-				Url:      "https://test.com/2",
+				Retailer:    retailer,
+				Price:       95.00,
+				Url:         "https://test.com/3",
+				CachedPrice: floatPtr(95.00),
 			},
 			{
 				Retailer: retailer,
 				Price:    90.01,
-				Url:      "https://test.com/2",
+				Url:      "https://test.com/4",
 			},
 		},
 	}
 	client := &TestClient{}
 
-	err := notify(prices, client, 0.1)
+	err := notify(prices, client)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -81,13 +84,15 @@ func TestNotify(t *testing.T) {
 	expected := "🛍️ **Cheaper prices found** 🤑\n\n" +
 		"**Test Product**\nBase price: £100.00\nBest price: **£80.00** at [Test Retailer](https://test.com/1) (-£20.00 | 20.00% off)\n" +
 		"Other prices:\n- 🔺 £90.00 at [Test Retailer 2](https://test2.com/1) (-£10.00 | 10.00% off)\n\n" +
-		"**Test Product 2**\nBase price: £90.00\nBest price: 🆕 **£60.00** at [Test Retailer](https://test.com/2) (-£30.00 | 33.33% off)\n\n"
+		"**Test Product 2**\nBase price: £90.00\nBest price: 🆕 **£60.00** at [Test Retailer](https://test.com/2) (-£30.00 | 33.33% off)\n\n" +
+		"**Test Product 3**\nBase price: £100.00\nBest price: 🆕 **£90.01** at [Test Retailer](https://test.com/4) (-£9.99 | 9.99% off)\n" +
+		"Other prices:\n- £95.00 at [Test Retailer](https://test.com/3) (-£5.00 | 5.00% off)\n\n"
 	if client.message != expected {
 		t.Errorf("unexpected message: expected %s\n\ngot: %s", expected, client.message)
 	}
 }
 
-func TestShouldNotify(t *testing.T) {
+func TestGetNotifiablePrices(t *testing.T) {
 	product := &Product{
 		Name:      "Test Product",
 		BasePrice: 100.00,
@@ -95,94 +100,66 @@ func TestShouldNotify(t *testing.T) {
 	retailer := &Retailer{
 		Name: "Test Retailer",
 	}
+	prices := map[*Product][]SuccessScrape{
+		product: {
+			// Prices without a cached price:
+			// Price is the same as the base price => should not be included
+			{retailer, product.BasePrice, "https://test.com/1", nil},
+			// Price is lower than the base price by less the min discount => should not be included
+			{retailer, product.BasePrice * 0.95, "https://test.com/2", nil},
+			// Price is lower than the base price by the min discount => should be included
+			{retailer, product.BasePrice * 0.9, "https://test.com/3", nil},
+			// Price is lower than the base price by more than the min discount => should be included
+			{retailer, product.BasePrice * 0.8, "https://test.com/4", nil},
 
-	type args struct {
-		prices      map[*Product][]SuccessScrape
-		minDiscount float64
-	}
-	tests := []struct {
-		name     string
-		args     args
-		expected bool
-	}{
-		{
-			name: "should notify if price is different to cache",
-			args: args{
-				prices: map[*Product][]SuccessScrape{
-					product: {
-						{retailer, product.BasePrice - 10, "https://test.com/1", &product.BasePrice},
-					},
-				},
-				minDiscount: 0.1,
-			},
-			expected: true,
-		},
-		{
-			name: "should not notify if price is the same as cache",
-			args: args{
-				prices: map[*Product][]SuccessScrape{
-					product: {
-						{retailer, product.BasePrice - 10, "https://test.com/1", floatPtr(product.BasePrice - 10)},
-					},
-				},
-				minDiscount: 0.1,
-			},
-			expected: false,
-		},
-		{
-			name: "should not notify if cache does not exist and price is not lower",
-			args: args{
-				prices: map[*Product][]SuccessScrape{
-					product: {
-						{retailer, product.BasePrice, "https://test.com/1", nil},
-					},
-				},
-				minDiscount: 0.1,
-			},
-			expected: false,
-		},
-		{
-			name: "should not notify if cache does not exist and price not lower than min discount",
-			args: args{
-				prices: map[*Product][]SuccessScrape{
-					product: {
-						{retailer, product.BasePrice * 0.95, "https://test.com/1", nil},
-					},
-				},
-				minDiscount: 0.1,
-			},
-			expected: false,
-		},
-		{
-			name: "should notify if cache does not exist and price is lower by the exact min discount",
-			args: args{
-				prices: map[*Product][]SuccessScrape{
-					product: {
-						{retailer, product.BasePrice * 0.9, "https://test.com/1", nil},
-					},
-				},
-				minDiscount: 0.1,
-			},
-			expected: true,
-		},
-		{
-			name: "should notify if cache does not exist and price is lower",
-			args: args{
-				prices: map[*Product][]SuccessScrape{
-					product: {
-						{retailer, product.BasePrice * 0.8, "https://test.com/1", nil},
-					},
-				},
-				minDiscount: 0.1,
-			},
-			expected: true,
+			// Prices with a cached price:
+			// Price is the same as the cached price => should not be included
+			{retailer, product.BasePrice * 0.9, "https://test.com/5", floatPtr(product.BasePrice * 0.9)},
+			// Price is below the base threshold but higher than the lower cache threshold => should not be included
+			{retailer, product.BasePrice * 0.85, "https://test.com/6", floatPtr(product.BasePrice * 0.9)},
+			// Price falls below the base threshold but is higher than the lower cache threshold  => should be included
+			{retailer, product.BasePrice * 0.85, "https://test.com/7", floatPtr(product.BasePrice * 0.91)},
+			// Price is below the base threshold and at the lower cache threshold => should be included
+			{retailer, product.BasePrice * 0.81, "https://test.com/8", floatPtr(product.BasePrice * 0.9)},
+			// Price is below the base and cache price thresholds => should be included
+			{retailer, product.BasePrice * 0.79, "https://test.com/9", floatPtr(product.BasePrice * 0.9)},
+			// Price is below the base threshold but has increased by less than the upper cache threshold => should not be included
+			{retailer, product.BasePrice * 0.83, "https://test.com/10", floatPtr(product.BasePrice * 0.8)},
+			// Price is below the base threshold and has increased to the upper cache threshold => should be included
+			{retailer, product.BasePrice * 0.88, "https://test.com/11", floatPtr(product.BasePrice * 0.8)},
+			// Price is below the base threshold and has increased beyond the upper cache threshold => should be included
+			{retailer, product.BasePrice * 0.89, "https://test.com/12", floatPtr(product.BasePrice * 0.8)},
+			// Price is above the base threshold but is below the upper cache threshold => should not be included
+			{retailer, product.BasePrice * 0.91, "https://test.com/13", floatPtr(product.BasePrice * 0.8)},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := shouldNotify(tt.args.prices, tt.args.minDiscount); got != tt.expected {
-				t.Errorf("shouldNotify() = %v, expected %v", got, tt.expected)
-			}
-		})
+	expected := map[*Product][]SuccessScrape{
+		product: {
+			{retailer, product.BasePrice * 0.9, "https://test.com/3", nil},
+			{retailer, product.BasePrice * 0.8, "https://test.com/4", nil},
+			{retailer, product.BasePrice * 0.85, "https://test.com/7", floatPtr(product.BasePrice * 0.91)},
+			{retailer, product.BasePrice * 0.81, "https://test.com/8", floatPtr(product.BasePrice * 0.9)},
+			{retailer, product.BasePrice * 0.79, "https://test.com/9", floatPtr(product.BasePrice * 0.9)},
+			{retailer, product.BasePrice * 0.88, "https://test.com/11", floatPtr(product.BasePrice * 0.8)},
+			{retailer, product.BasePrice * 0.89, "https://test.com/12", floatPtr(product.BasePrice * 0.8)},
+		},
+	}
+
+	filteredPrices := GetNotifiablePrices(prices, 0.1)
+
+	actualScrapes := filteredPrices[product]
+	expectedScrapes := expected[product]
+	if len(expectedScrapes) != len(actualScrapes) {
+		t.Errorf("unexpected length: expected %d, got %d", len(expectedScrapes), len(actualScrapes))
+	}
+
+	for i, expectedScrape := range expectedScrapes {
+		actualScrape := actualScrapes[i]
+		if expectedScrape.Price != actualScrape.Price {
+			t.Errorf("unexpected price: expected %.2f, got %.2f", expectedScrape.Price, actualScrape.Price)
+		}
+		if expectedScrape.Url != actualScrape.Url {
+			t.Errorf("unexpected url: expected %s, got %s", expectedScrape.Url, actualScrape.Url)
+		}
 	}
 }
