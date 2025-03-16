@@ -36,6 +36,7 @@ This is where you list the products you want to track:
 
 - `name` - name of the product
 - `base_price` - the default price to compare against
+- `category` - the product category (e.g. 'skincare', optional but useful for grouping)
 - `products.links` - a list of retailer URLs for that product
 
 **Supported retailers:**

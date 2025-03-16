@@ -10,6 +10,7 @@ import (
 type Product struct {
 	Name          string
 	BasePrice     float64
+	Category      string
 	RetailerLinks map[*Retailer]string
 }
 type Products []Product
@@ -52,6 +53,7 @@ func GetProducts(config Config, retailers map[string]*Retailer) Products {
 		product := Product{
 			Name:          p.Name,
 			BasePrice:     p.BasePrice,
+			Category:      p.Category,
 			RetailerLinks: make(map[*Retailer]string),
 		}
 

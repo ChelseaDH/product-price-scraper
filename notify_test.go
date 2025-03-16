@@ -32,6 +32,7 @@ func TestNotify(t *testing.T) {
 		&Product{
 			Name:      "Test Product",
 			BasePrice: 100.00,
+			Category:  "Category 1",
 		}: {
 			{
 				Retailer:    retailer,
@@ -49,6 +50,7 @@ func TestNotify(t *testing.T) {
 		&Product{
 			Name:      "Test Product 2",
 			BasePrice: 90.00,
+			Category:  "Category 2",
 		}: {
 			{
 				Retailer:    retailer,
@@ -60,6 +62,7 @@ func TestNotify(t *testing.T) {
 		&Product{
 			Name:      "Test Product 3",
 			BasePrice: 100.00,
+			Category:  "Category 1",
 		}: {
 			{
 				Retailer:    retailer,
@@ -73,6 +76,17 @@ func TestNotify(t *testing.T) {
 				Url:      "https://test.com/4",
 			},
 		},
+		&Product{
+			Name:      "Test Product 4",
+			BasePrice: 100.00,
+		}: {
+			{
+				Retailer:    retailer,
+				Price:       75.00,
+				Url:         "https://test.com/4",
+				CachedPrice: floatPtr(95.00),
+			},
+		},
 	}
 	client := &TestClient{}
 
@@ -82,11 +96,15 @@ func TestNotify(t *testing.T) {
 	}
 
 	expected := "🛍️ **Cheaper prices found** 🤑\n\n" +
+		"**Category 1**\n\n" +
 		"**Test Product**\nBase price: £100.00\nBest price: **£80.00** at [Test Retailer](https://test.com/1) (-£20.00 | 20.00% off)\n" +
 		"Other prices:\n- 🔺 £90.00 at [Test Retailer 2](https://test2.com/1) (-£10.00 | 10.00% off)\n\n" +
-		"**Test Product 2**\nBase price: £90.00\nBest price: 🆕 **£60.00** at [Test Retailer](https://test.com/2) (-£30.00 | 33.33% off)\n\n" +
 		"**Test Product 3**\nBase price: £100.00\nBest price: 🆕 **£90.01** at [Test Retailer](https://test.com/4) (-£9.99 | 9.99% off)\n" +
-		"Other prices:\n- £95.00 at [Test Retailer](https://test.com/3) (-£5.00 | 5.00% off)\n\n"
+		"Other prices:\n- £95.00 at [Test Retailer](https://test.com/3) (-£5.00 | 5.00% off)\n\n" +
+		"**Category 2**\n\n" +
+		"**Test Product 2**\nBase price: £90.00\nBest price: 🆕 **£60.00** at [Test Retailer](https://test.com/2) (-£30.00 | 33.33% off)\n\n" +
+		"**Other**\n\n" +
+		"**Test Product 4**\nBase price: £100.00\nBest price: **£75.00** at [Test Retailer](https://test.com/4) (-£25.00 | 25.00% off)\n\n"
 	if client.message != expected {
 		t.Errorf("unexpected message: expected %s\n\ngot: %s", expected, client.message)
 	}

@@ -1,35 +1,64 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"sort"
+	"strings"
 )
 
-func notify(prices map[*Product][]SuccessScrape, client Client) error {
-	message := bytes.Buffer{}
-	fmt.Fprintf(&message, "🛍️ **Cheaper prices found** 🤑\n\n")
+type ProductWithScrapes struct {
+	Product *Product
+	Scrapes []SuccessScrape
+}
 
+func notify(prices map[*Product][]SuccessScrape, client Client) error {
+	var message strings.Builder
+	message.WriteString("🛍️ **Cheaper prices found** 🤑\n\n")
+
+	groupedByCategory := make(map[string][]*ProductWithScrapes)
 	for product, scrapes := range prices {
 		sort.Slice(scrapes, func(i, j int) bool {
 			return scrapes[i].Price < scrapes[j].Price
 		})
 
-		fmt.Fprintf(&message, "**%s**\n", product.Name)
-		fmt.Fprintf(&message, "Base price: £%.2f\n", product.BasePrice)
-
-		cheapest := scrapes[0]
-		fmt.Fprintln(&message, cheapest.GetCheapestPriceString(product))
-
-		remaining := scrapes[1:]
-		if len(remaining) > 0 {
-			fmt.Fprintln(&message, "Other prices:")
-			for _, scrape := range remaining {
-				fmt.Fprintln(&message, scrape.GetOtherPriceString(product))
-			}
+		category := product.Category
+		if category == "" {
+			category = "Other"
 		}
 
-		fmt.Fprintln(&message)
+		groupedByCategory[category] = append(groupedByCategory[category], &ProductWithScrapes{
+			Product: product,
+			Scrapes: scrapes,
+		})
+	}
+
+	categories := make([]string, 0, len(groupedByCategory))
+	for category := range groupedByCategory {
+		categories = append(categories, category)
+	}
+	sort.Strings(categories)
+
+	for _, category := range categories {
+		products := groupedByCategory[category]
+		fmt.Fprintf(&message, "**%s**\n\n", category)
+
+		for _, product := range products {
+			fmt.Fprintf(&message, "**%s**\n", product.Product.Name)
+			fmt.Fprintf(&message, "Base price: £%.2f\n", product.Product.BasePrice)
+
+			cheapest := product.Scrapes[0]
+			fmt.Fprintln(&message, cheapest.GetCheapestPriceString(product.Product))
+
+			remaining := product.Scrapes[1:]
+			if len(remaining) > 0 {
+				fmt.Fprintln(&message, "Other prices:")
+				for _, scrape := range remaining {
+					fmt.Fprintln(&message, scrape.GetOtherPriceString(product.Product))
+				}
+			}
+
+			fmt.Fprintln(&message)
+		}
 	}
 
 	return client.SendMessage(message.String())
