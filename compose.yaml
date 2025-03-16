@@ -5,3 +5,4 @@ services:
       - ./config.toml:/config.toml:ro
       - ./app.db:/app.db
     restart: on-failure
+    pull_policy: always
