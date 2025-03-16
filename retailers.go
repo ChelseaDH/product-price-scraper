@@ -10,5 +10,6 @@ func GetRetailers() map[string]*Retailer {
 		"boots":         {Name: "Boots", Scraper: NewBootsScraper()},
 		"amazon":        {Name: "Amazon", Scraper: NewAmazonScraper()},
 		"lookFantastic": {Name: "Look Fantastic", Scraper: NewLookFantasticScraper()},
+		"superdrug":     {Name: "Superdrug", Scraper: NewSuperdrugScraper()},
 	}
 }

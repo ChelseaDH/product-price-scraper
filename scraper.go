@@ -87,9 +87,7 @@ func (b *BootsScraper) ExtractPrice(ctx context.Context, url string) (float64, e
 
 func NewBootsScraper() *BootsScraper {
 	return &BootsScraper{
-		baseScraper: newBaseScraper("div#PDP_productPrice", func(e *colly.HTMLElement) string {
-			return e.Text
-		}),
+		baseScraper: newBaseScraper("div#PDP_productPrice", getText),
 	}
 }
 
@@ -103,9 +101,7 @@ func (a *AmazonScraper) ExtractPrice(ctx context.Context, url string) (float64, 
 
 func NewAmazonScraper() *AmazonScraper {
 	return &AmazonScraper{
-		baseScraper: newBaseScraper("span#tp_price_block_total_price_ww", func(e *colly.HTMLElement) string {
-			return e.Text
-		}),
+		baseScraper: newBaseScraper("span#tp_price_block_total_price_ww", getText),
 	}
 }
 
@@ -123,6 +119,24 @@ func NewLookFantasticScraper() *LookFantasticScraper {
 			return e.ChildText("span")
 		}),
 	}
+}
+
+type SuperdrugScraper struct {
+	baseScraper *baseScraper
+}
+
+func (s *SuperdrugScraper) ExtractPrice(ctx context.Context, url string) (float64, error) {
+	return s.baseScraper.extractPrice(ctx, url)
+}
+
+func NewSuperdrugScraper() *SuperdrugScraper {
+	return &SuperdrugScraper{
+		baseScraper: newBaseScraper("span.price__current", getText),
+	}
+}
+
+func getText(e *colly.HTMLElement) string {
+	return e.Text
 }
 
 func parsePrice(price string) (*float64, error) {

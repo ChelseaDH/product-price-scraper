@@ -42,6 +42,7 @@ This is where you list the products you want to track:
 - [Boots](https://www.boots.com/)
 - [Amazon](https://www.amazon.co.uk/)
 - [LookFantastic](https://www.lookfantastic.com/)
+- [Superdrug](https://www.superdrug.com/)
 
 ## 🔨 Build instructions
 1. Copy `example.toml` to a file named `config.toml` and insert your desired products and settings 
