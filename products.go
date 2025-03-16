@@ -10,6 +10,7 @@ import (
 type Product struct {
 	Name          string
 	BasePrice     float64
+	Category      string
 	RetailerLinks map[*Retailer]string
 }
 type Products []Product

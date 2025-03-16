@@ -12,6 +12,7 @@
 [[products]]
     name = "Byoma Moisturizing Gel Cream"
     base_price = 11.99
+    category = "skincare"
 
     [products.links]
     boots = "https://www.boots.com/byoma-moisturizing-gel-cream-50ml-10307026"
@@ -20,6 +21,7 @@
 [[products]]
     name = "Byoma Balancing Face Mist"
     base_price = 11.99
+    category = "skincare"
 
     [products.links]
     boots = "https://www.boots.com/byoma-balancing-face-mist-100ml-10307029"
@@ -28,6 +30,7 @@
 [[products]]
     name = "INKEY List Oat Cleansing Balm"
     base_price = 12.00
+    category = "skincare"
 
     [products.links]
     boots = "https://www.boots.com/the-inkey-list-oat-cleansing-balm-150ml-10278182"
@@ -36,6 +39,7 @@
 [[products]]
     name = "INKEY List Q10 Serum"
     base_price = 9.00
+    category = "skincare"
 
     [products.links]
     amazon = "https://www.amazon.co.uk/INKEY-List-Antioxidant-Serum-Protect-dp-B09N9ZKWT8/dp/B09N9ZKWT8"

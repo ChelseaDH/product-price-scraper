@@ -28,6 +28,7 @@ type Matrix struct {
 type ProductTOML struct {
 	Name      string            `toml:"name"`
 	BasePrice float64           `toml:"base_price"`
+	Category  string            `toml:"category"`
 	Links     map[string]string `toml:"links"`
 }
 
