@@ -39,8 +39,12 @@ func notify(prices map[*Product][]SuccessScrape, client Client) error {
 	sort.Strings(categories)
 
 	for _, category := range categories {
-		products := groupedByCategory[category]
 		fmt.Fprintf(&message, "**%s**\n\n", category)
+
+		products := groupedByCategory[category]
+		sort.Slice(products, func(i, j int) bool {
+			return products[i].Product.Name < products[j].Product.Name
+		})
 
 		for _, product := range products {
 			fmt.Fprintf(&message, "**%s**\n", product.Product.Name)
